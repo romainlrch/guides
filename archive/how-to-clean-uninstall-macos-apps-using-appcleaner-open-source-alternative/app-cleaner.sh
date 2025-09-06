@@ -116,7 +116,27 @@ read -r answer
 if [ "$answer" = "y" ]; then
   printf "%s\n" "Moving app data to trash…"
   sleep 1
-  posixFiles=$(printf ", POSIX file \"%s\"" "${paths[@]}" | awk '{print substr($0,3)}')
-  osascript -e "tell application \"Finder\" to delete { $posixFiles }" > /dev/null
+
+  # Afficher tous les fichiers/dossiers trouvés
+  printf "Files and folders to be deleted:\n"
+  printf "%s\n" "${paths[@]}"
+
+  # Vérification rapide pour les dossiers système sensibles
+  for f in "${paths[@]}"; do
+    if [[ "$f" == "/" || "$f" == "/System"* ]]; then
+      echo "WARNING: $f looks like a system folder! Exiting."
+      exit 1
+    fi
+  done
+
+  # Confirmation finale avant suppression
+  read -p "Are you sure you want to delete all listed files? (y/n) " confirm
+  [ "$confirm" != "y" ] && exit 1
+
+  # Suppression réelle
+  for f in "${paths[@]}"; do
+    sudo rm -rf "$f"
+  done > /dev/null
+
   printf "%s\n" "Done"
 fi
